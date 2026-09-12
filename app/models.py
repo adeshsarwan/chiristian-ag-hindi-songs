@@ -14,6 +14,9 @@ class Song(Base):
     first_line_hindi: Mapped[str | None] = mapped_column(Text)
     first_line_roman: Mapped[str | None] = mapped_column(Text)
     lyrics: Mapped[str | None] = mapped_column(Text)
+    lyrics_book_hindi: Mapped[str | None] = mapped_column(Text)
+    lyrics_normalized_hindi: Mapped[str | None] = mapped_column(Text)
+    lyrics_roman: Mapped[str | None] = mapped_column(Text)
     book_page: Mapped[int | None] = mapped_column(Integer)
     book_source: Mapped[str | None] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(30), default="researching")
@@ -22,6 +25,8 @@ class Song(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     recordings: Mapped[list["Recording"]] = relationship(back_populates="song", cascade="all, delete-orphan")
     research: Mapped[list["ResearchLog"]] = relationship(back_populates="song", cascade="all, delete-orphan")
+    lyric_variants: Mapped[list["LyricVariant"]] = relationship(back_populates="song", cascade="all, delete-orphan")
+    arrangements: Mapped[list["Arrangement"]] = relationship(back_populates="song", cascade="all, delete-orphan")
 
 
 class Recording(Base):
@@ -41,12 +46,47 @@ class Recording(Base):
     match_reason: Mapped[str | None] = mapped_column(Text)
     verification_status: Mapped[str] = mapped_column(String(30), default="candidate")
     is_primary: Mapped[bool] = mapped_column(Boolean, default=False)
+    start_seconds: Mapped[int | None] = mapped_column(Integer)
+    end_seconds: Mapped[int | None] = mapped_column(Integer)
     rejected_reason: Mapped[str | None] = mapped_column(Text)
     notes: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     song: Mapped[Song] = relationship(back_populates="recordings")
     credits: Mapped[list["RecordingArtist"]] = relationship(back_populates="recording", cascade="all, delete-orphan")
+
+
+class LyricVariant(Base):
+    __tablename__ = "lyric_variants"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    song_id: Mapped[int] = mapped_column(ForeignKey("songs.id", ondelete="CASCADE"), index=True)
+    source_type: Mapped[str | None] = mapped_column(String(50))
+    source_title: Mapped[str | None] = mapped_column(Text)
+    source_url: Mapped[str | None] = mapped_column(Text)
+    lyrics_hindi: Mapped[str] = mapped_column(Text)
+    difference_notes: Mapped[str | None] = mapped_column(Text)
+    confidence: Mapped[float | None] = mapped_column(Float)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    song: Mapped[Song] = relationship(back_populates="lyric_variants")
+
+
+class Arrangement(Base):
+    __tablename__ = "arrangements"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    song_id: Mapped[int] = mapped_column(ForeignKey("songs.id", ondelete="CASCADE"), index=True)
+    arrangement_type: Mapped[str] = mapped_column(String(50), default="congregational")
+    preferred_key: Mapped[str | None] = mapped_column(String(20))
+    tempo_bpm: Mapped[int | None] = mapped_column(Integer)
+    tempo_style: Mapped[str | None] = mapped_column(String(100))
+    lead_instrument: Mapped[str | None] = mapped_column(String(100))
+    accompaniment_notes: Mapped[str | None] = mapped_column(Text)
+    vocal_notes: Mapped[str | None] = mapped_column(Text)
+    production_status: Mapped[str] = mapped_column(String(30), default="planned")
+    audio_url: Mapped[str | None] = mapped_column(Text)
+    notes: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    song: Mapped[Song] = relationship(back_populates="arrangements")
 
 
 class Artist(Base):
